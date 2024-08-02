@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="index.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="img-container">
+        <img src="image.png" alt="" height="auto%" width="100%" />
+      </div>
+
+      <div class="search-container">
+        <input type="text" name="movie" id="movie" class="input-box" />
+        <button class="add-button" id="add-button">append to list</button>
+      </div>
+
+      <div class="list-container">
+        <ul id="list">
+          <li>
+            <a  id="del-btn" class="del-btn" href="#" onclick="del()">dummy</a>
+          </li>
+        </ul>
+    </div>
+
+<script>
+  function addToList(item) {
+    const list = document.getElementById("list");
+    list.innerHTML += `
+      <li>
+        <a id="del-btn" class="del-btn" href="#" onclick="del('${item.key}')">${item.value}</a>
+      </li>
+    `;
+  }
+
+  async function fetchItems(url) {
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.items;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }
+
+  async function postItem(url, item) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({item}),
+      });
+      const data = await response.json();
+      return { key: data.key, value: item }; // Adjusted to match the addToList function
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const item = document.getElementById("movie");
+    const add = document.getElementById("add-button");
+    const list = document.getElementById("list");
+
+    const items = await fetchItems("http://localhost:8090/list");
+    items.forEach(addToList);
+
+    const handleAddItem = async () => {
+      if (item.value === "") return;
+      const newItem = await postItem("http://localhost:8090/", item.value);
+      if (newItem) {
+        addToList(newItem);
+        item.value = "";
+      }
+    };
+
+    add.addEventListener("click", (e) => {
+      e.preventDefault();
+      handleAddItem();
+    });
+
+    item.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAddItem();
+      }
+    });
+  });
+
+  async function del(item) {
+    console.log(item);
+    await postItem("http://localhost:8090/delete", item);
+    window.location.reload();
+  }
+</script>
+
+
+  </body>
+</html>
